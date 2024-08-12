@@ -1,4 +1,7 @@
 import nodemailer from "nodemailer";
+import { User } from "@/models/user.model";
+import { v4 as uuidv4 } from "uuid";
+import crypto from "crypto";
 
 interface EmailOptions {
   email: string;
@@ -8,27 +11,46 @@ interface EmailOptions {
 
 export const sendEmail = async ({ email, emailType, userId }: EmailOptions) => {
   try {
-    
-    const transporter = nodemailer.createTransport({
-      host: "smtp.example.com",
-      port: 587,
+    const token = uuidv4();
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+    if (emailType === "verify") {
+      await User.findByIdAndUpdate(userId, {
+        verifyToken: hashedToken,
+        verifyTokenExpires: Date.now() + 3600000, // 1 hour
+      });
+    } else if (emailType === "reset") {
+      await User.findByIdAndUpdate(userId, {
+        forgotPasswordToken: hashedToken,
+        forgotPasswordExpires: Date.now() + 1800000, // 30 minutes
+      });
+    }
+
+    const transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT as string, 10), // Ensure port is an integer
       auth: {
-        user: "your-email@example.com",
-        pass: "your-email-password",
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASSWORD,
       },
     });
 
     const mailOptions = {
-      from: "noreply@example.com",
+      from: process.env.MAIL_FROM,
       to: email,
       subject: emailType === "verify" ? "Verify Email" : "Reset Password",
-      text:
-        emailType === "verify"
-          ? "Thank you for signing up!"
-          : `To reset your password, please visit http://localhost:3000/reset-password/${userId}`,
+      html: `<p>Click <a href="${
+        process.env.DOMAIN
+      }/verifyemail?token=${hashedToken}">here</a> to ${
+        emailType === "verify" ? "verify your email" : "reset your password"
+      }
+      or copy and paste the link below in your browser. <br> ${
+        process.env.DOMAIN
+      }/verifyemail?token=${hashedToken}
+      </p>`,
     };
 
-    const mailResponse = await transporter.sendMail(mailOptions);
+    const mailResponse = await transport.sendMail(mailOptions);
     return mailResponse;
   } catch (error) {
     console.error("Error sending email:", error);
