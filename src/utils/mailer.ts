@@ -8,6 +8,7 @@ interface EmailOptions {
 
 export const sendEmail = async ({ email, emailType, userId }: EmailOptions) => {
   try {
+    
     const transporter = nodemailer.createTransport({
       host: "smtp.example.com",
       port: 587,
