@@ -3,7 +3,6 @@ import { User } from "@/models/user.model";
 import { NextRequest, NextResponse } from "next/server";
 import bcryptjs from "bcryptjs";
 import { sendEmail } from "@/utils/mailer";
-import { verify } from "crypto";
 
 connect(); // Connect to the database
 
@@ -17,7 +16,7 @@ export async function POST(request: NextRequest) {
     const req = await request.json();
     const { email, password, userName }: UserDetails = req;
 
-    if (!email || !password || userName) {
+    if (!email || !password || !userName) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -25,7 +24,7 @@ export async function POST(request: NextRequest) {
     }
 
     const isExist = await User.findOne({
-      $or: [{ email, userName }],
+      $or: [{ email }, { userName }],
     });
 
     if (isExist) {
@@ -36,8 +35,13 @@ export async function POST(request: NextRequest) {
     }
 
     const hashedPassword = await bcryptjs.hash(password, 10);
-    const user = new User({ email, password: hashedPassword, userName });
-    const createdUser = await user.save();
+    const user = await User.create({
+      email,
+      password: hashedPassword,
+      userName,
+    });
+
+    const createdUser = await User.findById(user._id);
 
     await sendEmail({ email, emailType: "verify", userId: createdUser._id });
 
