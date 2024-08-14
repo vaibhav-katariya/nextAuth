@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 const page = () => {
@@ -10,6 +11,8 @@ const page = () => {
   });
 
   const [loading, setLoading] = useState(false);
+
+  const router  = useRouter()
 
   const handleChange = (e: any) => {
     setUserData({ ...userData, [e.target.name]: e.target.value });
@@ -23,6 +26,7 @@ const page = () => {
       console.log(res);
       setUserData({ email: "", password: "" });
       alert("User login successfully!");
+      router.push('/')
     } catch (error: any) {
       console.error("Error login:", error.message);
       alert("An error occurred while login. Please try again.");

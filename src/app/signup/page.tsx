@@ -1,6 +1,7 @@
 "use client";
 
 import axios from "axios";
+import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 
 const page = () => {
@@ -9,6 +10,8 @@ const page = () => {
     email: "",
     password: "",
   });
+
+  const router = useRouter()
 
   const [loading, setLoading] = useState(false);
 
@@ -24,6 +27,7 @@ const page = () => {
       console.log(res);
       setUserData({ userName: "", email: "", password: "" });
       alert("User created successfully!");
+      router.push('/login')
     } catch (error: any) {
       console.error("Error signing up:", error.message);
       alert("An error occurred while signing up. Please try again.");
